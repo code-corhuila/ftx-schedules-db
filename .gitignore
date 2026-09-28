@@ -1,0 +1,12 @@
+# Local environment (real values never go to git)
+.env
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

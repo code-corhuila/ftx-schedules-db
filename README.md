@@ -17,27 +17,30 @@ db/migration/
 ├── V001__create_schedules_table.sql   table, rules, updated_at trigger
 └── V002__seed_court_schedules.sql     4 courts x 7 days, 06:00-22:00
 tests/verify.sql                       post-migration checks, run by CI
-Dockerfile                             Flyway image with the migrations inside
+.github/workflows/migrations.yml       CI: migrate, re-run, validate, verify
+Dockerfile                             Flyway image (pinned version) with the migrations inside
 docker-compose.yml                     standalone database + migration + checks
+.env.example                           local values; copy to .env
 ```
 
 ## Data model
 
 | Column | Type | Rule |
 |---|---|---|
-| `id` | UUID | Primary key |
+| `id` | UUID | Primary key, `gen_random_uuid()` |
 | `court_id` | UUID | Reference to `courts.id` in `ftx-courts-db`. **No foreign key**: it lives in another database |
-| `day_of_week` | VARCHAR(10) | `MON` … `SUN` |
+| `day_of_week` | VARCHAR(3) | `MON` … `SUN` |
 | `opening_time` | TIME | Whole hour |
 | `closing_time` | TIME | Whole hour, later than `opening_time` |
 | `created_at` / `updated_at` | TIMESTAMPTZ | `updated_at` is maintained by a trigger |
 
-One schedule per court and day (`idx_schedules_court_day`). Tables live in the `schedules`
+One schedule per court and day (unique constraint `uq_schedules_court_day`). Tables live in the `schedules`
 schema, as does Flyway's `flyway_schema_history`.
 
 ### Contract with ftx-courts-db
 
-The seed uses these court ids. The courts seed in `ftx-courts-db` **must use the same four ids**:
+The seed uses these court ids. The courts seed in `ftx-courts-db` **must use the same four ids**,
+inserted explicitly (not generated). `tests/verify.sql` fails if any schedule points to another id:
 
 | Court | id |
 |---|---|
@@ -89,7 +92,8 @@ connects with `currentSchema=schedules` in its JDBC URL.
 - A migration that has run in any environment is **never edited**. Changes go in a new file.
 - Naming: `V{NNN}__{snake_case_description}.sql`, numbered in sequence.
 - Every new rule gets a check in `tests/verify.sql` in the same Pull Request.
-- CI (`.github/workflows/ci.yml`, job `migrations`) must be green before merging.
+- CI (`.github/workflows/migrations.yml`, job `migrations`) must be green before merging. It runs a clean
+  migration, a second run that must apply nothing, `flyway validate`, and `tests/verify.sql`.
 
 ## Branching
 
