@@ -3,12 +3,15 @@
 # FLYWAY_PASSWORD from the environment (deploy/compose.yml and the CI).
 [flyway]
 locations = ["filesystem:01_ddl", "filesystem:02_dml", "filesystem:03_dcl", "filesystem:04_tcl"]
-# Annex J.6: own schema, so the control table is schedules.flyway_schema_history
-# and never collides with the control table of another domain in the single database.
-schemas = ["schedules"]
 defaultSchema = "schedules"
 validateMigrationNaming = true   # a badly named file fails instead of being ignored
 cleanDisabled = true             # clean drops everything: this flow never needs it
+
+# In the TOML format, schemas and connectRetries belong to the environment.
+[environments.default]
+# Annex J.6: own schema, so the control table is schedules.flyway_schema_history
+# and never collides with the control table of another domain in the single database.
+schemas = ["schedules"]
 connectRetries = 10              # waits for the single instance to accept connections
 
 [flyway.postgresql.transactional]
